@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>星绘 Celestia - 卡拉彼丘 | 星空下的引航者</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6B7FD4;
+            --primary-light: #8BA4E8;
+            --primary-dark: #4A5BA8;
+            --accent: #FFD700;
+            --bg-dark: #0a0e27;
+            --bg-mid: #12183a;
+            --bg-light: #1a2348;
+            --text-primary: #e8ecff;
+            --text-secondary: #a0a8d0;
+            --star-glow: rgba(107, 127, 212, 0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        #starfield {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+        .star {
+            position: absolute; background: white; border-radius: 50%;
+            animation: twinkle var(--duration) ease-in-out infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.2; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+        .shooting-star {
+            position: absolute; width: 4px; height: 4px;
+            background: linear-gradient(90deg, white, transparent);
+            border-radius: 50%; animation: shoot 3s linear infinite; opacity: 0;
+        }
+        @keyframes shoot {
+            0% { transform: translateX(0) translateY(0); opacity: 1; }
+            100% { transform: translateX(-300px) translateY(300px); opacity: 0; }
+        }
+        nav {
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            background: rgba(10, 14, 39, 0.85); backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(107, 127, 212, 0.2);
+            transition: all 0.3s ease;
+        }
+        nav.scrolled {
+            background: rgba(10, 14, 39, 0.95);
+            box-shadow: 0 4px 30px rgba(107, 127, 212, 0.15);
+        }
+        .nav-container {
+            max-width: 1400px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1rem 2rem;
+        }
+        .logo {
+            font-family: 'Noto Serif SC', serif; font-size: 1.5rem; font-weight: 900;
+            background: linear-gradient(135deg, var(--primary-light), var(--accent));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .logo::before { content: "✦"; font-size: 1.2rem; -webkit-text-fill-color: var(--accent); }
+        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.95rem;
+            font-weight: 500; transition: all 0.3s ease; position: relative; padding: 0.5rem 0;
+        }
+        .nav-links a::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 0; height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+        }
+        .nav-links a:hover { color: var(--text-primary); }
+        .nav-links a:hover::after { width: 100%; }
+        .hero {
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            position: relative; padding: 6rem 2rem 4rem; overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(107, 127, 212, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(139, 164, 232, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(74, 91, 168, 0.1) 0%, transparent 50%);
+        }
+        .hero-content { position: relative; z-index: 2; text-align: center; max-width: 900px; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 0.5rem;
+            background: rgba(107, 127, 212, 0.15); border: 1px solid rgba(107, 127, 212, 0.3);
+            padding: 0.5rem 1.2rem; border-radius: 50px; font-size: 0.85rem;
+            color: var(--primary-light); margin-bottom: 2rem; animation: fadeInDown 1s ease;
+        }
+        .hero-badge::before { content: "✦"; color: var(--accent); }
+        .hero h1 {
+            font-family: 'Noto Serif SC', serif; font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 900; line-height: 1.1; margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, var(--primary-light) 50%, var(--primary) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: fadeInUp 1s ease 0.2s both;
+        }
+        .hero .subtitle { font-size: clamp(1.2rem, 3vw, 1.8rem); color: var(--text-secondary); margin-bottom: 1.5rem; font-weight: 300; animation: fadeInUp 1s ease 0.4s both; }
+        .hero .quote { font-family: 'Noto Serif SC', serif; font-size: 1.1rem; color: var(--primary-light); font-style: italic; opacity: 0.8; animation: fadeInUp 1s ease 0.6s both; }
+        .hero .quote::before, .hero .quote::after { content: '"'; color: var(--accent); font-size: 1.5rem; }
+        .hero-image { margin-top: 3rem; position: relative; animation: fadeInUp 1s ease 0.8s both; }
+        .hero-image img { max-width: 100%; max-height: 500px; border-radius: 20px; box-shadow: 0 20px 60px rgba(107, 127, 212, 0.3), 0 0 100px rgba(107, 127, 212, 0.1); transition: transform 0.5s ease, box-shadow 0.5s ease; }
+        .hero-image:hover img { transform: translateY(-10px) scale(1.02); box-shadow: 0 30px 80px rgba(107, 127, 212, 0.4), 0 0 120px rgba(107, 127, 212, 0.15); }
+        .hero-image::before { content: ''; position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px; background: linear-gradient(135deg, rgba(107, 127, 212, 0.1), rgba(255, 215, 0, 0.05)); border-radius: 30px; z-index: -1; filter: blur(30px); }
+        .scroll-indicator { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); animation: bounce 2s infinite; z-index: 2; }
+        .scroll-indicator span { display: block; width: 30px; height: 50px; border: 2px solid var(--primary-light); border-radius: 15px; position: relative; }
+        .scroll-indicator span::before { content: ''; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 6px; height: 6px; background: var(--primary-light); border-radius: 50%; animation: scrollDot 2s infinite; }
+        @keyframes scrollDot { 0%, 100% { top: 8px; opacity: 1; } 50% { top: 30px; opacity: 0.3; } }
+        @keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(10px); } }
+        section { position: relative; z-index: 1; padding: 6rem 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .section-header { text-align: center; margin-bottom: 4rem; }
+        .section-header h2 { font-family: 'Noto Serif SC', serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; margin-bottom: 1rem; background: linear-gradient(135deg, #fff, var(--primary-light)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .section-header .divider { width: 80px; height: 3px; background: linear-gradient(90deg, var(--primary), var(--accent)); margin: 0 auto 1rem; border-radius: 2px; }
+        .section-header p { color: var(--text-secondary); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+        #profile { background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-mid) 100%); }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+        .profile-image { position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4); }
+        .profile-image img { width: 100%; height: auto; display: block; transition: transform 0.5s ease; }
+        .profile-image:hover img { transform: scale(1.05); }
+        .profile-image::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 50%; background: linear-gradient(to top, rgba(10, 14, 39, 0.8), transparent); pointer-events: none; }
+        .profile-info h3 { font-family: 'Noto Serif SC', serif; font-size: 2rem; margin-bottom: 0.5rem; color: var(--text-primary); }
+        .profile-info .en-name { color: var(--primary-light); font-size: 1rem; letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 1.5rem; }
+        .profile-info .desc { color: var(--text-secondary); line-height: 1.8; margin-bottom: 2rem; }
+        .info-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .info-card { background: rgba(107, 127, 212, 0.08); border: 1px solid rgba(107, 127, 212, 0.15); border-radius: 12px; padding: 1.2rem; transition: all 0.3s ease; }
+        .info-card:hover { background: rgba(107, 127, 212, 0.15); border-color: rgba(107, 127, 212, 0.3); transform: translateY(-3px); }
+        .info-card .label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+        .info-card .value { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+        #gallery { background: var(--bg-mid); }
+        .gallery-filters { display: flex; justify-content: center; gap: 1rem; margin-bottom: 3rem; flex-wrap: wrap; }
+        .filter-btn { background: transparent; border: 1px solid rgba(107, 127, 212, 0.3); color: var(--text-secondary); padding: 0.6rem 1.5rem; border-radius: 50px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; transition: all 0.3s ease; }
+        .filter-btn:hover, .filter-btn.active { background: rgba(107, 127, 212, 0.2); border-color: var(--primary); color: var(--text-primary); }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+        .gallery-item { position: relative; border-radius: 16px; overflow: hidden; cursor: pointer; aspect-ratio: 4/3; background: var(--bg-light); transition: all 0.4s ease; }
+        .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: all 0.5s ease; }
+        .gallery-item:hover { transform: translateY(-8px); box-shadow: 0 20px 40px rgba(107, 127, 212, 0.2); }
+        .gallery-item:hover img { transform: scale(1.1); }
+        .gallery-item .overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 2rem 1rem 1rem; background: linear-gradient(to top, rgba(10, 14, 39, 0.9), transparent); opacity: 0; transition: opacity 0.3s ease; }
+        .gallery-item:hover .overlay { opacity: 1; }
+        .gallery-item .overlay h4 { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+        .gallery-item .overlay p { font-size: 0.8rem; color: var(--text-secondary); }
+        .gallery-item.wide { grid-column: span 2; }
+        .gallery-item.tall { grid-row: span 2; aspect-ratio: 3/4; }
+        #timeline { background: linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-dark) 100%); }
+        .timeline { position: relative; max-width: 1000px; margin: 0 auto; }
+        .timeline::before { content: ''; position: absolute; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: linear-gradient(to bottom, var(--primary), var(--accent), var(--primary)); }
+        .timeline-item { display: flex; justify-content: flex-end; padding-right: calc(50% + 2rem); position: relative; margin-bottom: 3rem; }
+        .timeline-item:nth-child(even) { justify-content: flex-start; padding-right: 0; padding-left: calc(50% + 2rem); }
+        .timeline-dot { position: absolute; left: 50%; transform: translateX(-50%); width: 16px; height: 16px; background: var(--primary); border: 3px solid var(--bg-dark); border-radius: 50%; z-index: 2; box-shadow: 0 0 20px var(--star-glow); }
+        .timeline-content { background: rgba(107, 127, 212, 0.08); border: 1px solid rgba(107, 127, 212, 0.15); border-radius: 16px; padding: 1.5rem; max-width: 400px; transition: all 0.3s ease; }
+        .timeline-content:hover { background: rgba(107, 127, 212, 0.12); transform: translateX(5px); }
+        .timeline-item:nth-child(even) .timeline-content:hover { transform: translateX(-5px); }
+        .timeline-date { color: var(--primary-light); font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; }
+        .timeline-content h4 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--text-primary); }
+        .timeline-content p { color: var(--text-secondary); font-size: 0.9rem; }
+        #skills { background: var(--bg-dark); }
+        .skills-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; }
+        .skill-card { background: rgba(107, 127, 212, 0.05); border: 1px solid rgba(107, 127, 212, 0.1); border-radius: 20px; padding: 2rem; position: relative; overflow: hidden; transition: all 0.4s ease; }
+        .skill-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 3px; background: linear-gradient(90deg, var(--primary), var(--accent)); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
+        .skill-card:hover::before { transform: scaleX(1); }
+        .skill-card:hover { background: rgba(107, 127, 212, 0.1); border-color: rgba(107, 127, 212, 0.25); transform: translateY(-5px); box-shadow: 0 15px 40px rgba(107, 127, 212, 0.15); }
+        .skill-icon { width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1.5rem; box-shadow: 0 8px 20px rgba(107, 127, 212, 0.3); }
+        .skill-card h3 { font-size: 1.3rem; margin-bottom: 0.8rem; color: var(--text-primary); }
+        .skill-card p { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
+        .skill-tag { display: inline-block; background: rgba(107, 127, 212, 0.15); color: var(--primary-light); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; margin-top: 1rem; margin-right: 0.5rem; }
+        footer { background: var(--bg-dark); border-top: 1px solid rgba(107, 127, 212, 0.1); padding: 4rem 2rem 2rem; position: relative; z-index: 1; }
+        .footer-content { max-width: 1400px; margin: 0 auto; text-align: center; }
+        .footer-logo { font-family: 'Noto Serif SC', serif; font-size: 2rem; font-weight: 900; background: linear-gradient(135deg, var(--primary-light), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 1rem; }
+        .footer-quote { font-family: 'Noto Serif SC', serif; color: var(--text-secondary); font-style: italic; margin-bottom: 2rem; }
+        .footer-links { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
+        .footer-links a { color: var(--text-secondary); text-decoration: none; transition: color 0.3s ease; }
+        .footer-links a:hover { color: var(--primary-light); }
+        .copyright { color: var(--text-secondary); font-size: 0.85rem; opacity: 0.6; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+        .reveal { opacity: 0; transform: translateY(50px); transition: all 0.8s ease; }
+        .reveal.active { opacity: 1; transform: translateY(0); }
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .profile-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .gallery-item.wide { grid-column: span 1; }
+            .timeline::before { left: 20px; }
+            .timeline-item, .timeline-item:nth-child(even) { padding-left: 60px; padding-right: 0; justify-content: flex-start; }
+            .timeline-dot { left: 20px; }
+            .timeline-content { max-width: 100%; }
+        }
+        .loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); display: flex; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        .loader.hidden { opacity: 0; visibility: hidden; }
+        .loader-star { width: 60px; height: 60px; position: relative; }
+        .loader-star::before { content: '✦'; font-size: 3rem; color: var(--primary-light); animation: loaderSpin 1.5s linear infinite; display: block; text-align: center; }
+        @keyframes loaderSpin { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.2); } 100% { transform: rotate(360deg) scale(1); } }
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 14, 39, 0.95); display: flex; align-items: center; justify-content: center; z-index: 9998; opacity: 0; visibility: hidden; transition: all 0.3s ease; padding: 2rem; }
+        .lightbox.active { opacity: 1; visibility: visible; }
+        .lightbox img { max-width: 90%; max-height: 90vh; border-radius: 12px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5); transform: scale(0.9); transition: transform 0.3s ease; }
+        .lightbox.active img { transform: scale(1); }
+        .lightbox-close { position: absolute; top: 2rem; right: 2rem; width: 40px; height: 40px; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 50%; color: white; font-size: 1.5rem; cursor: pointer; transition: all 0.3s ease; }
+        .lightbox-close:hover { background: rgba(255, 255, 255, 0.2); transform: rotate(90deg); }
+    </style>
+</head>
+<body>
+    <div class="loader" id="loader"><div class="loader-star"></div></div>
+    <div id="starfield"></div>
+    <nav id="navbar">
+        <div class="nav-container">
+            <div class="logo">星绘 Celestia</div>
+            <ul class="nav-links">
+                <li><a href="#home">首页</a></li>
+                <li><a href="#profile">角色档案</a></li>
+                <li><a href="#gallery">照片墙</a></li>
+                <li><a href="#timeline">时光轨迹</a></li>
+                <li><a href="#skills">技能展示</a></li>
+            </ul>
+        </div>
+    </nav>
+    <section class="hero" id="home">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <div class="hero-badge">卡拉彼丘 · 引航者</div>
+            <h1>星绘</h1>
+            <p class="subtitle">Celestia · 乌尔比诺</p>
+            <p class="quote">希望这缕希望的微光，能够传递出去</p>
+            <div class="hero-image"><img src="images/img12.png" alt="星绘 - 星空下的引航者"></div>
+        </div>
+        <div class="scroll-indicator"><span></span></div>
+    </section>
+    <section id="profile">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2>角色档案</h2>
+                <div class="divider"></div>
+                <p>来自乌尔比诺的引航者，以星辰为指引，守护每一位同伴</p>
+            </div>
+            <div class="profile-grid">
+                <div class="profile-image reveal"><img src="images/img41.png" alt="星绘立绘"></div>
+                <div class="profile-info reveal">
+                    <h3>星绘</h3>
+                    <div class="en-name">Xing Hui / Celestia</div>
+                    <p class="desc">星绘是《卡拉彼丘》中来自乌尔比诺阵营的超弦体角色。她拥有银白色的长发和紫色的眼眸，身着以星空为设计灵感的蓝紫色服饰，宛如夜空中最明亮的星辰。作为支援型角色，她能够为队友提供护盾回复和传送支援，是团队中不可或缺的守护者。</p>
+                    <div class="info-cards">
+                        <div class="info-card"><div class="label">阵营</div><div class="value">乌尔比诺</div></div>
+                        <div class="info-card"><div class="label">定位</div><div class="value">支援型</div></div>
+                        <div class="info-card"><div class="label">武器</div><div class="value">北极星</div></div>
+                        <div class="info-card"><div class="label">生日</div><div class="value">9月9日</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="gallery">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2>照片墙</h2>
+                <div class="divider"></div>
+                <p>记录星绘的每一个精彩瞬间，从战斗到日常，从节日到冒险</p>
+            </div>
+            <div class="gallery-filters reveal">
+                <button class="filter-btn active" data-filter="all">全部</button>
+                <button class="filter-btn" data-filter="wallpaper">壁纸</button>
+                <button class="filter-btn" data-filter="festival">节日贺图</button>
+                <button class="filter-btn" data-filter="story">剧情CG</button>
+                <button class="filter-btn" data-filter="chibi">Q版</button>
+            </div>
+            <div class="gallery-grid" id="galleryGrid">
+                <div class="gallery-item wide" data-category="wallpaper">
+                    <img src="images/img24.jpg" alt="星绘单人KV">
+                    <div class="overlay"><h4>星绘单人KV</h4><p>官方宣传壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img07.jpg" alt="星绘单人KV">
+                    <div class="overlay"><h4>星绘单人KV</h4><p>宣传海报</p></div>
+                </div>
+                <div class="gallery-item wide" data-category="wallpaper">
+                    <img src="images/img22.jpg" alt="乌尔比诺KV">
+                    <div class="overlay"><h4>乌尔比诺阵营KV</h4><p>阵营宣传图</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img05.jpg" alt="乌尔比诺KV">
+                    <div class="overlay"><h4>乌尔比诺阵营</h4><p>宣传海报</p></div>
+                </div>
+                <div class="gallery-item wide" data-category="wallpaper">
+                    <img src="images/img23.png" alt="同沐春风">
+                    <div class="overlay"><h4>同沐春风共此时</h4><p>春季活动壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img06.png" alt="同沐春风">
+                    <div class="overlay"><h4>同沐春风</h4><p>活动海报</p></div>
+                </div>
+                <div class="gallery-item wide" data-category="wallpaper">
+                    <img src="images/img10.png" alt="深空开拓">
+                    <div class="overlay"><h4>深空开拓</h4><p>太空主题壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img34.png" alt="深空开拓">
+                    <div class="overlay"><h4>深空开拓</h4><p>太空主题</p></div>
+                </div>
+                <div class="gallery-item wide" data-category="wallpaper">
+                    <img src="images/img04.png" alt="两周年活动">
+                    <div class="overlay"><h4>两周年庆典</h4><p>周年纪念壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img21.png" alt="两周年活动">
+                    <div class="overlay"><h4>两周年庆典</h4><p>周年纪念</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img38.png" alt="2024生日贺图">
+                    <div class="overlay"><h4>2024生日贺图</h4><p>生日庆祝</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img42.jpg" alt="2025生日贺图">
+                    <div class="overlay"><h4>2025生日贺图</h4><p>生日庆祝</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img36.png" alt="2024生日">
+                    <div class="overlay"><h4>2024生日</h4><p>生日贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img15.png" alt="2023七夕">
+                    <div class="overlay"><h4>2023七夕节</h4><p>七夕贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img16.jpg" alt="2023中秋">
+                    <div class="overlay"><h4>2023中秋节</h4><p>中秋贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img17.jpg" alt="2023除夕">
+                    <div class="overlay"><h4>2023除夕</h4><p>新年贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img18.jpg" alt="2024端午">
+                    <div class="overlay"><h4>2024端午节</h4><p>端午贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img19.jpg" alt="2025除夕">
+                    <div class="overlay"><h4>2025除夕</h4><p>新年贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img33.jpg" alt="2024元旦">
+                    <div class="overlay"><h4>2024元旦</h4><p>新年贺图</p></div>
+                </div>
+                <div class="gallery-item" data-category="festival">
+                    <img src="images/img45.png" alt="2024正月初二">
+                    <div class="overlay"><h4>2024正月初二</h4><p>春节贺图</p></div>
+                </div>
+                <div class="gallery-item wide" data-category="story">
+                    <img src="images/img12.png" alt="剧情背景">
+                    <div class="overlay"><h4>剧情CG</h4><p>主线剧情</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img30.png" alt="剧情CG">
+                    <div class="overlay"><h4>剧情CG</h4><p>赛季剧情</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img31.png" alt="剧情CG">
+                    <div class="overlay"><h4>剧情CG</h4><p>赛季剧情</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img32.png" alt="剧情CG">
+                    <div class="overlay"><h4>剧情CG</h4><p>赛季剧情</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img01.png" alt="剧情背景">
+                    <div class="overlay"><h4>剧情背景</h4><p>游戏场景</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img13.png" alt="剧情背景">
+                    <div class="overlay"><h4>剧情背景</h4><p>游戏场景</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img37.jpg" alt="朝露公馆">
+                    <div class="overlay"><h4>朝露公馆</h4><p>轶闻录</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img39.jpg" alt="朝露公馆">
+                    <div class="overlay"><h4>朝露公馆</h4><p>轶闻录</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img46.jpg" alt="Q版星绘">
+                    <div class="overlay"><h4>Q版星绘</h4><p>可爱形象</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img47.png" alt="Q版星绘">
+                    <div class="overlay"><h4>Q版星绘</h4><p>可爱形象</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img48.jpg" alt="Q版星绘">
+                    <div class="overlay"><h4>Q版星绘</h4><p>可爱形象</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img40.jpg" alt="国际服日历">
+                    <div class="overlay"><h4>国际服日历</h4><p>Q版形象</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img27.jpg" alt="国际服日历">
+                    <div class="overlay"><h4>国际服日历</h4><p>9月月历</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img43.jpg" alt="国际服推特">
+                    <div class="overlay"><h4>国际服推特</h4><p>宣传图</p></div>
+                </div>
+                <div class="gallery-item" data-category="chibi">
+                    <img src="images/img44.jpg" alt="国际服推特">
+                    <div class="overlay"><h4>国际服推特</h4><p>宣传图</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img08.png" alt="田间野趣">
+                    <div class="overlay"><h4>田间野趣</h4><p>活动壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img25.png" alt="田间野趣">
+                    <div class="overlay"><h4>田间野趣</h4><p>活动海报</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img03.jpg" alt="6月测试">
+                    <div class="overlay"><h4>6月测试KV</h4><p>测试宣传</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img20.jpg" alt="6月测试">
+                    <div class="overlay"><h4>6月测试KV</h4><p>测试宣传</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img02.png" alt="13赛季">
+                    <div class="overlay"><h4>第13赛季</h4><p>虚想龙歌</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img14.png" alt="13赛季">
+                    <div class="overlay"><h4>第13赛季</h4><p>虚想龙歌</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img09.png" alt="移动端">
+                    <div class="overlay"><h4>移动端壁纸</h4><p>手机壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img26.png" alt="移动端">
+                    <div class="overlay"><h4>移动端壁纸</h4><p>手机壁纸</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img11.png" alt="移动端主页">
+                    <div class="overlay"><h4>移动端主页背景</h4><p>个人主页</p></div>
+                </div>
+                <div class="gallery-item" data-category="wallpaper">
+                    <img src="images/img35.png" alt="移动端主页">
+                    <div class="overlay"><h4>移动端主页背景</h4><p>个人主页</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img28.jpg" alt="角色设定">
+                    <div class="overlay"><h4>角色设定图</h4><p>官方设定</p></div>
+                </div>
+                <div class="gallery-item" data-category="story">
+                    <img src="images/img29.png" alt="角色设定">
+                    <div class="overlay"><h4>角色设定图</h4><p>官方设定</p></div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="timeline">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2>时光轨迹</h2>
+                <div class="divider"></div>
+                <p>星绘与引航者们共同走过的每一个重要时刻</p>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">2023年</div>
+                        <h4>初次相遇</h4>
+                        <p>星绘作为卡拉彼丘首批超弦体登场，以温柔的支援者身份加入乌尔比诺阵营，成为无数引航者的第一位伙伴。</p>
+                    </div>
+                </div>
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">2023年8月</div>
+                        <h4>七夕佳节</h4>
+                        <p>首次节日贺图发布，星绘在星空下为引航者送上七夕祝福，银发与星光交相辉映。</p>
+                    </div>
+                </div>
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">2023年9月</div>
+                        <h4>第一个生日</h4>
+                        <p>9月9日，星绘迎来了她的第一个生日，引航者们纷纷送上祝福，官方发布了精美的生日贺图。</p>
+                    </div>
+                </div>
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">2024年</div>
+                        <h4>一周年庆典</h4>
+                        <p>卡拉彼丘一周年，星绘与引航者们共同庆祝，发布了周年限定壁纸和纪念活动。</p>
+                    </div>
+                </div>
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">2024年9月</div>
+                        <h4>二周年生日</h4>
+                        <p>星绘的第二个生日，官方发布了全新的生日贺图，Q版形象更是萌化人心。</p>
+                    </div>
+                </div>
+                <div class="timeline-item reveal">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">2025年</div>
+                        <h4>持续闪耀</h4>
+                        <p>星绘继续陪伴着每一位引航者，在新的一年中绽放更加耀眼的光芒。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="skills">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2>技能展示</h2>
+                <div class="divider"></div>
+                <p>星绘的战斗风格以支援为核心，守护每一位队友</p>
+            </div>
+            <div class="skills-grid">
+                <div class="skill-card reveal">
+                    <div class="skill-icon">✦</div>
+                    <h3>守护星芒</h3>
+                    <p>主动技能。星绘选择一个友方英雄，投掷流星芒，被附身期间获得护盾。之后流星芒会返回星绘身边，提升星绘的护甲值和护甲上限。</p>
+                    <span class="skill-tag">护盾回复</span>
+                    <span class="skill-tag">传送支援</span>
+                </div>
+                <div class="skill-card reveal">
+                    <div class="skill-icon">✧</div>
+                    <h3>星弦甲生</h3>
+                    <p>被动技能。星绘周围有友方英雄时，可缓慢恢复该英雄与自身的护甲值。这是星绘作为支援核心的重要保障。</p>
+                    <span class="skill-tag">被动恢复</span>
+                    <span class="skill-tag">团队增益</span>
+                </div>
+                <div class="skill-card reveal">
+                    <div class="skill-icon">✦</div>
+                    <h3>星空之门</h3>
+                    <p>大招技能。星绘选择一个友方英雄，为其提供护甲值并开始蓄能。蓄能完毕后，星绘将传送到该英雄身边。蓄能期间按下大招键可取消传送。</p>
+                    <span class="skill-tag">传送支援</span>
+                    <span class="skill-tag">护甲增益</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">✦ 星绘 Celestia</div>
+            <p class="footer-quote">"希望这缕希望的微光，能够传递出去"</p>
+            <div class="footer-links">
+                <a href="https://wiki.biligame.com/klbq/%E6%98%9F%E7%BB%98" target="_blank">卡拉彼丘WIKI</a>
+                <a href="https://klbq.qq.com" target="_blank">官方网站</a>
+                <a href="#home">回到顶部</a>
+            </div>
+            <p class="copyright">
+                本站为粉丝自制，所有图片版权归 © 卡拉彼丘 / Day1 Studio 所有<br>
+                Made with ✦ by a Celestia fan | celestia.codes
+            </p>
+        </div>
+    </footer>
+    <div class="lightbox" id="lightbox">
+        <button class="lightbox-close" onclick="closeLightbox()">×</button>
+        <img src="" alt="" id="lightboxImg">
+    </div>
+    <script>
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loader').classList.add('hidden');
+            }, 1000);
+        });
+        function createStarfield() {
+            const container = document.getElementById('starfield');
+            const starCount = 150;
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 3 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.setProperty('--duration', (Math.random() * 3 + 2) + 's');
+                star.style.animationDelay = Math.random() * 5 + 's';
+                container.appendChild(star);
+            }
+            setInterval(() => {
+                const shootingStar = document.createElement('div');
+                shootingStar.className = 'shooting-star';
+                shootingStar.style.left = (Math.random() * 80 + 20) + '%';
+                shootingStar.style.top = (Math.random() * 30) + '%';
+                container.appendChild(shootingStar);
+                setTimeout(() => shootingStar.remove(), 3000);
+            }, 5000);
+        }
+        createStarfield();
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        const revealElements = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+        revealElements.forEach(el => revealObserver.observe(el));
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const galleryItems = document.querySelectorAll('.gallery-item');
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const filter = btn.dataset.filter;
+                galleryItems.forEach(item => {
+                    if (filter === 'all' || item.dataset.category === filter) {
+                        item.style.display = 'block';
+                        setTimeout(() => {
+                            item.style.opacity = '1';
+                            item.style.transform = 'scale(1)';
+                        }, 10);
+                    } else {
+                        item.style.opacity = '0';
+                        item.style.transform = 'scale(0.8)';
+                        setTimeout(() => {
+                            item.style.display = 'none';
+                        }, 300);
+                    }
+                });
+            });
+        });
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightboxImg');
+        galleryItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const img = item.querySelector('img');
+                lightboxImg.src = img.src;
+                lightboxImg.alt = img.alt;
+                lightbox.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            });
+        });
+        function closeLightbox() {
+            lightbox.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            }
+        });
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
